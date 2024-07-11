@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My To Do List</title>
+    <!-- Bootstrap 5: For layouting optionally -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+      crossorigin="anonymous"
+    />
+    <!-- Google fonts: chakra petch -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: "Chakra Petch", sans-serif;
+        background-color: black;
+        color: rgb(80, 80, 212);
+      }
+      .container {
+        margin-top: 50px;
+        text-align: center;
+      }
+      .search-task,
+      .todo-list {
+        margin-top: 25px;
+      }
+      .todo-name {
+        border: 1px solid black;
+        border-radius: 10px;
+        padding: 10px;
+        margin-top: 2px;
+      }
+      .todo-name:hover,
+      .todo-name:focus {
+        border: rgb(80, 80, 212);
+      }
+      a {
+        text-decoration: none;
+      }
+      .button {
+        background-color: white;
+        padding: 10px;
+        border: 1px solid black;
+        border-radius: 10px;
+      }
+      .button:hover {
+        background-color: rgb(80, 80, 212);
+        color: white;
+      }
+      .footer {
+        margin-top: 50px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="description">
+        <h6>
+          <a href="" class="button" type="button" id="account"
+            ><i class="fa-solid fa-user"></i> Akun anda</a
+          >
+          Kelola tugas-tugas anda dengan mudah menggunakan website ini.
+        </h6>
+        <label for="todo-name">Buat todo list</label>
+        <br />
+        <input
+          class="todo-name"
+          type="text"
+          name="todo-name"
+          id="new-task"
+          placeholder="Tulis tugas baru disini"
+        />
+        <button class="button" type="submit" id="add-button">
+          <i class="fa-solid fa-plus"></i>
+        </button>
+      </div>
+      <div class="search-task">
+        <input
+          type="text"
+          class="todo-name"
+          name="search-task"
+          id="search-task"
+          placeholder="Cari tugas"
+        />
+        <button class="button" type="submit" id="search-button">
+          <i class="fa-brands fa-searchengin"></i>
+        </button>
+      </div>
+      <div class="todo-list">
+        <h5><u>Daftar tugas anda yang harus anda kerjakan</u></h5>
+        <small><b>Daftar seluruh tugas akan ditampilkan dibawah ini</b></small>
+      </div>
+      <footer class="footer">
+        <small
+          >&copy; 2024-<span id="copyrightYear"></span>, FMATheNomad.</small
+        >
+      </footer>
+    </div>
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://kit.fontawesome.com/c32fe83d09.js"
+      crossorigin="anonymous"
+    ></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const addButton = document.getElementById("add-button");
+        const searchButton = document.getElementById("search-button");
+        const todoListContainer = document.querySelector(".todo-list");
+
+        async function fetchTodos() {
+          const response = await fetch("http://localhost:3000/todos");
+          const todos = await response.json();
+          displayTodos(todos);
+        }
+
+        async function addTodo() {
+          const newTaskInput = document.getElementById("new-task");
+          const newTaskName = newTaskInput.value;
+
+          if (newTaskName.trim() === "") return;
+
+          await fetch("http://localhost:3000/todos", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: newTaskName }),
+          });
+
+          newTaskInput.value = "";
+          fetchTodos();
+        }
+
+        async function deleteTodo(id) {
+          await fetch(`http://localhost:3000/todos/${id}`, {
+            method: "DELETE",
+          });
+
+          fetchTodos();
+        }
+
+        function displayTodos(todos) {
+          todoListContainer.innerHTML = `
+        <h5><u>Daftar tugas anda yang harus anda kerjakan</u></h5>
+        <small><b>Daftar seluruh tugas akan ditampilkan dibawah ini</b></small>
+        <ul class="list-group mt-3">
+          ${todos
+            .map(
+              (todo) => `
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              ${todo.name}
+              <button class="btn btn-danger btn-sm" onclick="deleteTodoHandler('${todo._id}')">Delete</button>
+            </li>`
+            )
+            .join("")}
+        </ul>
+      `;
+        }
+
+        window.deleteTodoHandler = function (id) {
+          deleteTodo(id);
+        };
+
+        addButton.addEventListener("click", addTodo);
+
+        searchButton.addEventListener("click", function () {
+          const searchTaskInput = document.getElementById("search-task");
+          const searchTaskName = searchTaskInput.value.toLowerCase();
+
+          const items = document.querySelectorAll(".list-group-item");
+          items.forEach((item) => {
+            const taskName = item.textContent.toLowerCase();
+            if (taskName.includes(searchTaskName)) {
+              item.style.display = "";
+            } else {
+              item.style.display = "none";
+            }
+          });
+        });
+
+        fetchTodos();
+      });
+    </script>
+    <script>
+      const currentYear = new Date().getFullYear();
+      document.getElementById("copyrightYear").textContent = currentYear;
+    </script>
+  </body>
+</html>
